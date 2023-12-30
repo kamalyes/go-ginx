@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ginx-demo-svc
+  namespace: kube-test
+spec:
+  ports:
+    - port: 8857
+      protocol: TCP
+      targetPort: 8857
+  selector:
+    app: ginx-demo
+  # type: ClusterIP

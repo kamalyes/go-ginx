@@ -1,0 +1,17 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata: 
+  name: ginx-demo
+  namespace: kube-test
+spec:
+  rules:
+  - host: kube.ginxtest.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+            service:
+                name: ginx-demo-svc
+                port:
+                  number: 80

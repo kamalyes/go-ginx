@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ginx-demo
+  namespace: kube-test
+  labels:
+    app: ginx-demo
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: ginx-demo
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%         #滚动升级时先启动的pod数量
+      maxUnavailable: 25%   #滚动升级时允许的最大unavailable的pod数量
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ginx-demo
+    spec:
+      containers:
+      - name: ginx-demo
+        image: kamalyes/ginx:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8857
+        lifecycle:
+            preStop:
+             exec:
+              command: ["/bin/sh","-c","curl -X GET  ''http://localhost:8857/hello'';\ sleep 30"]
+        startupProbe:  
+          tcpSocket:
+            port: 8857 
+          ## 执行探测的时间间隔（单位是秒）。默认是 10 秒。最小值是 1。
+          periodSeconds: 2
+          ## 探测器在失败后，被视为成功的最小连续成功数。默认值是1,存活和启动探测的这个值必须是 1。最小值是 1
+          successThreshold: 1 
+          ## 当探测失败时，Kubernetes 的重试次数。 对存活探测而言，放弃就意味着重新启动容器,默认值是 3。最小值是 1
+          failureThreshold: 2
+          ## 探测的超时后等待多少秒。默认值是 1 秒。最小值是 1。
+          timeoutSeconds: 2
+        readinessProbe:
+          tcpSocket:
+            port: 8857
+          initialDelaySeconds: 5
+          periodSeconds: 1
+        livenessProbe:
+            httpGet:
+                port: 8857
+                path: /hello
+            ## 容器启动后要等待多少秒后才启动存活和就绪探测器， 默认是 0 秒，最小值是 0。按照生产的情况配置40
+            initialDelaySeconds: 40
+            ## 执行探测的时间间隔（单位是秒）。默认是 10 秒。最小值是 1。
+            periodSeconds: 5
+            ## 探测的超时后等待多少秒。默认值是 1 秒。最小值是 1。
+            timeoutSeconds: 2
+            ## 探测器在失败后，被视为成功的最小连续成功数。默认值是1,存活和启动探测的这个值必须是 1。最小值是 1
+            successThreshold: 1
+            ## 当探测失败时，Kubernetes 的重试次数。 对存活探测而言，放弃就意味着重新启动容器,默认值是 3。最小值是 1
+            failureThreshold: 3
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+          limits:
+            cpu: 10m
+            memory: 20Mi
+        volumeMounts:
+        - name: timezone
+          mountPath: /etc/localtime
+      imagePullSecrets:
+      - name: harbor
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      volumes:
+        - name: timezone
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
